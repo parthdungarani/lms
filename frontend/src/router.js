@@ -80,6 +80,51 @@ const routes = [
 		props: true,
 	},
 	{
+		path: '/schedule',
+		name: 'SlotPicker',
+		component: () => import('@/pages/Booking/SlotPicker.vue'),
+	},
+	{
+		path: '/schedule/confirm',
+		name: 'BookingDetailsForm',
+		component: () => import('@/pages/Booking/BookingDetailsForm.vue'),
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/schedule/checkout/:name',
+		name: 'BookingCheckout',
+		component: () => import('@/pages/Booking/Checkout.vue'),
+		props: true,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/schedule/checkout/:name/processing',
+		name: 'BookingPaymentProcessing',
+		component: () => import('@/pages/Booking/PaymentProcessing.vue'),
+		props: true,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/schedule/payment/:name/result',
+		name: 'BookingPaymentResult',
+		component: () => import('@/pages/Booking/PaymentResult.vue'),
+		props: true,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/my-bookings',
+		name: 'MyBookings',
+		component: () => import('@/pages/Booking/MyBookings.vue'),
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/my-bookings/:bookingId/join',
+		name: 'BookingJoin',
+		component: () => import('@/pages/Booking/BookingJoin.vue'),
+		props: true,
+		meta: { requiresAuth: true },
+	},
+	{
 		path: '/statistics',
 		name: 'Statistics',
 		component: () => import('@/pages/Statistics.vue'),
@@ -277,6 +322,13 @@ router.beforeEach(async (to, from, next) => {
 			window.location.href = '/login'
 			return
 		}
+	}
+
+	if (to.meta?.requiresAuth && !isLoggedIn) {
+		window.location.href = `/login?redirect-to=${encodeURIComponent(
+			to.fullPath
+		)}`
+		return
 	}
 
 	if (

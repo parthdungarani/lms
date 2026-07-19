@@ -528,6 +528,27 @@ const getSidebarItems = (forMobile = false) => {
 					activeFor: ['Batches', 'BatchDetail', 'Batch', 'BatchForm'],
 				},
 				{
+					label: '1:1 Sessions',
+					icon: 'CalendarClock',
+					to: 'SlotPicker',
+					activeFor: [
+						'SlotPicker',
+						'BookingDetailsForm',
+						'BookingCheckout',
+						'BookingPaymentProcessing',
+						'BookingPaymentResult',
+					],
+				},
+				{
+					label: 'My Bookings',
+					icon: 'CalendarCheck',
+					to: 'MyBookings',
+					activeFor: ['MyBookings', 'BookingJoin'],
+					condition: () => {
+						return userResource?.data
+					},
+				},
+				{
 					label: 'Certifications',
 					icon: 'GraduationCap',
 					to: 'CertifiedParticipants',
