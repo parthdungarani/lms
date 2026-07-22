@@ -15,7 +15,7 @@
 		<p class="mt-2 text-p-sm text-ink-gray-6">
 			{{
 				__(
-					"You can safely close this page — your booking is confirmed automatically and we'll email you as soon as it's done."
+					"You can safely close this page — your enrollment is completed automatically and we'll email you as soon as it's confirmed."
 				)
 			}}
 		</p>
@@ -33,7 +33,7 @@ import { inject, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { call, Breadcrumbs } from 'frappe-ui'
 
-const REFERENCE_DOCTYPE = 'CELPIP Slot Booking'
+const REFERENCE_DOCTYPE = 'LMS Batch'
 
 const props = defineProps({
 	name: { type: String, required: true },
@@ -42,15 +42,16 @@ const props = defineProps({
 const router = useRouter()
 const socket = inject('$socket')
 
-// Flips true if confirmation hasn't arrived within a few seconds, so we can reassure the
-// user. The webhook is the source of truth and finishes server-side even if they leave.
+// Flips true if confirmation hasn't arrived within a few seconds, so we can switch from
+// "confirming..." to a reassuring "still working, we'll email you" message. The webhook is
+// the source of truth and finishes server-side even if the user leaves this page.
 const slow = ref(false)
 
 const breadcrumbs = [
-	{ label: __('1:1 Sessions'), route: { name: 'SlotPicker' } },
+	{ label: __('Batches'), route: { name: 'Batches' } },
 	{
 		label: __('Confirming Payment'),
-		route: { name: 'BookingPaymentProcessing', params: { name: props.name } },
+		route: { name: 'BatchPaymentProcessing', params: { name: props.name } },
 	},
 ]
 
@@ -62,7 +63,7 @@ function goToResult(status) {
 	if (settled) return
 	settled = true
 	router.replace({
-		name: 'BookingPaymentResult',
+		name: 'BatchPaymentResult',
 		params: { name: props.name },
 		query: { status },
 	})

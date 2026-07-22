@@ -74,6 +74,27 @@ const routes = [
 		props: true,
 	},
 	{
+		path: '/batches/checkout/:name',
+		name: 'BatchCheckout',
+		component: () => import('@/pages/Batches/BatchCheckout.vue'),
+		props: true,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/batches/checkout/:name/processing',
+		name: 'BatchPaymentProcessing',
+		component: () => import('@/pages/Batches/BatchPaymentProcessing.vue'),
+		props: true,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/batches/payment/:name/result',
+		name: 'BatchPaymentResult',
+		component: () => import('@/pages/Batches/BatchPaymentResult.vue'),
+		props: true,
+		meta: { requiresAuth: true },
+	},
+	{
 		path: '/billing/:type/:name',
 		name: 'Billing',
 		component: () => import('@/pages/Billing.vue'),

@@ -64,9 +64,8 @@
 			<div v-if="!readOnlyMode && !canAccessBatch">
 				<router-link
 					:to="{
-						name: 'Billing',
+						name: 'BatchCheckout',
 						params: {
-							type: 'batch',
 							name: batch.data.name,
 						},
 					}"

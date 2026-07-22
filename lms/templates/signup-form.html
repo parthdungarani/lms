@@ -4,33 +4,51 @@
         <div class="form-group">
             <label class="form-label sr-only" for="signup_fullname"> {{ _("Full Name") }} </label>
             <input type="text" id="signup_fullname" class="form-control" placeholder="{{ _('Jane Doe') }}"
-            required autofocus>
+            required autofocus style="height:40px; box-sizing:border-box;">
         </div>
         <div class="form-group">
             <label class="form-label sr-only" for="signup_email"> {{ _("Email") }} </label>
             <input type="email" id="signup_email" class="form-control"
-            placeholder="{{ _('jane@example.com') }}" required>
+            placeholder="{{ _('jane@example.com') }}" required style="height:40px; box-sizing:border-box;">
         </div>
 
-        {% if frappe.db.get_single_value("LMS Settings", "user_category") %}
         <div class="form-group">
-            <label class="form-label sr-only"> {{ _("User Category") }} </label>
-            <div class="control-input-wrapper">
-                <div class="control-input flex align-center">
-                    <select type="text" id="user_category" data-fieldname="user_category" style="color: var(--text-light)"
-                    class="input-with-feedback form-control ellipsis" data-fieldtype="Select" required>
-                        <option value=""> {{ _("Category") }} </option>
-                        <option value="Business Owner"> {{ _("Business Owner") }} </option>
-                        <option value="Manager (Sales/Marketing/Customer)"> {{ _("Manager (Sales/Marketing/Customer)") }} </option>
-                        <option value="Employee"> {{ _("Employee") }} </option>
-                        <option value="Student"> {{ _("Student") }} </option>
-                        <option value="Freelancer/Just looking"> {{ _("Freelancer/Just looking") }} </option>
-                        <option value="Others"> {{ _("Others") }} </option>
-                    </select>
-                </div>
+            <label class="form-label sr-only" for="signup_mobile"> {{ _("Mobile Number") }} </label>
+            <div class="mobile-field" style="display:flex; gap:8px; width:100%;">
+                <select id="signup_country_code" class="form-control" style="flex:0 0 auto; width:120px; background-color:#fff; -webkit-appearance:none; -moz-appearance:none; appearance:none; height:40px; line-height:40px; padding:0 26px 0 10px; box-sizing:border-box; background-image:url(&quot;data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E&quot;); background-repeat:no-repeat; background-position:right 9px center;">
+                    <option value="+91" selected>🇮🇳 +91</option>
+                    <option value="+1">🇨🇦 +1</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+61">🇦🇺 +61</option>
+                    <option value="+64">🇳🇿 +64</option>
+                    <option value="+353">🇮🇪 +353</option>
+                    <option value="+971">🇦🇪 +971</option>
+                    <option value="+966">🇸🇦 +966</option>
+                    <option value="+974">🇶🇦 +974</option>
+                    <option value="+965">🇰🇼 +965</option>
+                    <option value="+968">🇴🇲 +968</option>
+                    <option value="+973">🇧🇭 +973</option>
+                    <option value="+65">🇸🇬 +65</option>
+                    <option value="+60">🇲🇾 +60</option>
+                    <option value="+63">🇵🇭 +63</option>
+                    <option value="+92">🇵🇰 +92</option>
+                    <option value="+880">🇧🇩 +880</option>
+                    <option value="+94">🇱🇰 +94</option>
+                    <option value="+977">🇳🇵 +977</option>
+                    <option value="+234">🇳🇬 +234</option>
+                    <option value="+254">🇰🇪 +254</option>
+                    <option value="+27">🇿🇦 +27</option>
+                    <option value="+49">🇩🇪 +49</option>
+                    <option value="+33">🇫🇷 +33</option>
+                    <option value="+81">🇯🇵 +81</option>
+                    <option value="+82">🇰🇷 +82</option>
+                    <option value="+86">🇨🇳 +86</option>
+                </select>
+                <input type="tel" id="signup_mobile" class="form-control" inputmode="numeric"
+                placeholder="{{ _('Mobile number') }}" required style="flex:1 1 auto; min-width:0; background-color:#fff; height:40px; box-sizing:border-box;">
             </div>
         </div>
-        {% endif %}
 
         {% if custom_signup_content %}
         <div class="form-group">
@@ -60,29 +78,29 @@
 
 <script>
     frappe.ready(function () {
-        $("#user_category").on("change", (e) => {
-            style_category(e);
-        });
-
         $(".signup-form").on("submit", (e) => {
             signup(e);
         });
     });
 
-    const style_category = (e) => {
-        let category_color = $(e.currentTarget).val() ? "var(--text-color)" : "var(--text-muted)";
-        $("#user_category").css("color", category_color);
-    }
-
     const signup = (e) => {
         e.preventDefault();
         const email = ($("#signup_email").val() || "").trim();
         const full_name = frappe.utils.xss_sanitise(($("#signup_fullname").val() || "").trim());
+        const country_code = $("#signup_country_code").val();
+        const local_number = ($("#signup_mobile").val() || "").replace(/[^\d]/g, "");
 
         if (!email || !validate_email(email) || !full_name) {
             login.set_status('{{ _("Valid email and name required") }}', 'red');
             return false;
         }
+
+        if (local_number.length < 6 || local_number.length > 14) {
+            login.set_status('{{ _("Please enter a valid mobile number") }}', 'red');
+            return false;
+        }
+
+        const mobile_no = country_code + local_number;
 
         frappe.call({
             method: "lms.lms.user.sign_up",
@@ -90,7 +108,7 @@
                 "email": email,
                 "full_name": full_name,
                 "verify_terms": $("#signup-terms").prop("checked") ? 1 : 0,
-                "user_category": $("#user_category").length ?  $("#user_category").val() : ""
+                "mobile_no": mobile_no
             },
             statusCode: login.login_handlers
         })
