@@ -14,6 +14,17 @@ no_cache = 1
 
 
 def get_context():
+	# Transitional gate: once Celppro (the celpipedu SPA) is the student app, students landing
+	# on an old /lms URL from a bookmark or an old email are sent to its home. Staff keep this
+	# UI for the interim mentor screens. Flag/roles mirror celpipedu.api.settings -- read
+	# directly rather than imported, to avoid an lms -> celpipedu dependency; delete this block
+	# when the mentor console lands and this frontend is retired.
+	if frappe.conf.get("celppro_new_app_enabled") and not (
+		{"System Manager", "Moderator"} & set(frappe.get_roles())
+	):
+		frappe.local.flags.redirect_location = "/school"
+		raise frappe.Redirect
+
 	context = frappe._dict()
 	context.boot = get_boot()
 	frappe.db.commit()

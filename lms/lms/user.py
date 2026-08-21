@@ -58,6 +58,11 @@ def sign_up(email: str, full_name: str, verify_terms: bool, mobile_no: str = Non
 			"enabled": 1,
 			"new_password": random_string(10),
 			"user_type": "Website User",
+			# Trigger Frappe's welcome mail (template "new_user") so the signup completes with a
+			# set-password link -- without this the account is created with an unknown random
+			# password and the user receives nothing. This does NOT grant desk/Frappe access:
+			# the user stays a Website User with only the LMS Student role added below.
+			"send_welcome_email": 1,
 		}
 	)
 	user.flags.ignore_permissions = True

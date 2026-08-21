@@ -7,8 +7,8 @@ app_title = "Learning"
 app_publisher = "Frappe"
 app_description = "Open Source Learning Management System built with Frappe Framework"
 app_icon_url = "/assets/lms/images/lms-logo.png"
-app_icon_title = "Learning"
-app_icon_route = "/lms"
+app_icon_title = "Celppro"
+app_icon_route = "/school"
 app_color = "grey"
 app_email = "jannat@frappe.io"
 app_license = "AGPL"
@@ -194,12 +194,9 @@ website_redirects = [
 		"source": r"^/courses/.*$",
 		"target": f"/{get_lms_path()}/courses",
 	},
-	{"source": "/batches", "target": f"/{get_lms_path()}/batches"},
-	{
-		"source": r"/batches/(.*)",
-		"target": f"/{get_lms_path()}/batches",
-		"match_with_query_string": True,
-	},
+	# /batches and /batches/* are owned by the Celppro SPA (celpipedu website_route_rules).
+	# Redirects resolve before route rules, so these entries made the SPA's own batch routes
+	# unreachable. The LMS batch list is still served at /{lms_path}/batches.
 	{"source": "/job-openings", "target": f"/{get_lms_path()}/job-openings"},
 	{
 		"source": r"/job-openings/(.*)",

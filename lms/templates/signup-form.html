@@ -83,8 +83,19 @@
         });
     });
 
+    let signup_submitting = false;
+
     const signup = (e) => {
         e.preventDefault();
+        // Rapid double-clicks (or Enter-key repeats) used to fire multiple concurrent sign_up
+        // calls -- the first created the account and showed the "check your email" dialog while
+        // a near-simultaneous second call saw the just-created user and showed "Already
+        // Registered", with the two responses landing out of order. Guard against any second
+        // submit until the in-flight one resolves.
+        if (signup_submitting) {
+            return false;
+        }
+
         const email = ($("#signup_email").val() || "").trim();
         const full_name = frappe.utils.xss_sanitise(($("#signup_fullname").val() || "").trim());
         const country_code = $("#signup_country_code").val();
@@ -102,6 +113,9 @@
 
         const mobile_no = country_code + local_number;
 
+        signup_submitting = true;
+        $(".btn-signup").prop("disabled", true);
+
         frappe.call({
             method: "lms.lms.user.sign_up",
             args: {
@@ -110,7 +124,11 @@
                 "verify_terms": $("#signup-terms").prop("checked") ? 1 : 0,
                 "mobile_no": mobile_no
             },
-            statusCode: login.login_handlers
+            statusCode: login.login_handlers,
+            always: () => {
+                signup_submitting = false;
+                $(".btn-signup").prop("disabled", false);
+            }
         })
         return false;
     }

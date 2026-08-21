@@ -763,6 +763,87 @@ def get_current_exchange_rate(source: str, target: str = "USD") -> float:
 	return details["rates"][target]
 
 
+def _get_visitor_country():
+	"""Best-effort country of the current visitor, memoized per request."""
+	if getattr(frappe.local, "_visitor_country", "__unset__") == "__unset__":
+		country = frappe.db.get_value("Address", {"email_id": frappe.session.user}, "country")
+		if not country:
+			country = frappe.db.get_value("User", frappe.session.user, "country")
+		if not country:
+			try:
+				country = get_country_code()
+			except Exception:
+				country = None
+		frappe.local._visitor_country = country
+	return frappe.local._visitor_country
+
+
+def _get_cached_exchange_rate(source: str, target: str):
+	"""Fetch and memoize the exchange rate for a currency pair per request."""
+	cache = getattr(frappe.local, "_exchange_rate_cache", None)
+	if cache is None:
+		cache = frappe.local._exchange_rate_cache = {}
+	key = f"{source}:{target}"
+	if key not in cache:
+		try:
+			cache[key] = get_current_exchange_rate(source, target)
+		except Exception:
+			cache[key] = None
+	return cache[key]
+
+
+def get_approx_local_price(amount: float, from_currency: str) -> dict:
+	"""Return an APPROXIMATE price in the visitor's local currency, for display only.
+
+	The actual charge always stays in `from_currency`; this is purely informational so
+	visitors browsing from other countries understand roughly what the price is worth.
+	Returns None when the visitor is in the same currency, the country is unknown, or the
+	exchange rate cannot be fetched.
+	"""
+	if not amount or not from_currency:
+		return None
+
+	country = _get_visitor_country()
+	if not country:
+		return None
+
+	code = frappe.db.get_value("Country", country, "code")
+	if not code:
+		return None
+
+	try:
+		from babel.numbers import get_territory_currencies
+
+		currencies = get_territory_currencies(code.upper())
+	except Exception:
+		return None
+
+	target = currencies[0] if currencies else None
+	if not target or target == from_currency:
+		return None
+
+	rate = _get_cached_exchange_rate(from_currency, target)
+	if not rate:
+		return None
+
+	converted = amount * rate
+	# Round up to a clean-looking number (nearest 10) so it reads as an estimate.
+	converted = int(converted)
+	if converted % 10:
+		converted = converted + 10 - (converted % 10)
+
+	try:
+		formatted = fmt_money(converted, 0, target)
+	except Exception:
+		formatted = f"{converted} {target}"
+
+	return {
+		"amount": converted,
+		"currency": target,
+		"formatted": formatted,
+	}
+
+
 def guest_access_allowed():
 	allow_guest_access = frappe.get_cached_value("LMS Settings", None, "allow_guest_access")
 	if frappe.session.user == "Guest" and not allow_guest_access:
@@ -1318,6 +1399,43 @@ def get_neighbour_lesson(course: str, chapter: int, lesson: int) -> dict:
 	}
 
 
+def get_batch_class_dates(batch: str) -> list:
+	"""Distinct scheduled class dates for one batch, sorted. A batch's Timetable can have
+	several rows on the same date (lesson + quiz etc.), so distinct dates -- not row count --
+	is the real class-day count."""
+	rows = frappe.get_all("LMS Batch Timetable", filters={"parent": batch}, pluck="date")
+	return sorted(set(rows))
+
+
+def get_batches_class_dates(batches: list) -> dict:
+	"""Batch-fetch variant of get_batch_class_dates for a list of batch names (avoids one
+	query per batch in list views). Returns {batch_name: [sorted dates]}."""
+	if not batches:
+		return {}
+	rows = frappe.get_all(
+		"LMS Batch Timetable", filters={"parent": ["in", batches]}, fields=["parent", "date"]
+	)
+	dates_by_batch: dict = {}
+	for row in rows:
+		dates_by_batch.setdefault(row.parent, set()).add(row.date)
+	return {name: sorted(dates) for name, dates in dates_by_batch.items()}
+
+
+def get_prorated_batch_amount(amount: float, allow_late_joining: bool, class_dates: list) -> float:
+	"""Scale `amount` down to only the class days remaining, once the batch has opted into
+	late-join proration (`allow_late_joining_prorated_price`) and some of its scheduled class
+	days have already passed. Full price applies until day 1 of the batch; unchanged if the
+	batch has no timetable to prorate against (can't determine remaining days safely)."""
+	if not allow_late_joining or not class_dates:
+		return amount
+	total_days = len(class_dates)
+	today = getdate()
+	remaining_days = sum(1 for d in class_dates if d >= today)
+	if remaining_days >= total_days:
+		return amount
+	return flt(amount * remaining_days / total_days, 2)
+
+
 @frappe.whitelist(allow_guest=True)  # nosemgrep: frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @rate_limit(limit=500, seconds=60 * 60)
 def get_batch_details(batch: str):
@@ -1351,6 +1469,7 @@ def get_batch_details(batch: str):
 			"amount_usd",
 			"currency",
 			"paid_batch",
+			"allow_late_joining_prorated_price",
 			"evaluation_end_date",
 			"allow_self_enrollment",
 			"certification",
@@ -1366,14 +1485,11 @@ def get_batch_details(batch: str):
 	)
 
 	batch_details.instructors = get_instructors("LMS Batch", batch)
-	batch_details.accept_enrollments = batch_details.start_date > getdate()
-
-	if (
-		not batch_details.accept_enrollments
-		and batch_details.start_date == getdate()
-		and str(batch_details.start_time) > nowtime()
-	):
-		batch_details.accept_enrollments = True
+	# Enrollment stays open for as long as the batch is actually running, not just up to its
+	# start -- a multi-week live batch (end_date > start_date) is still joinable mid-run.
+	# end_date >= start_date is enforced on save, so this also covers the "starts today" case
+	# that used to need its own start_time check.
+	batch_details.accept_enrollments = batch_details.end_date >= getdate()
 
 	batch_details.courses = frappe.get_all(
 		"Batch Course", filters={"parent": batch}, fields=["course", "title", "evaluator"]
@@ -1387,11 +1503,25 @@ def get_batch_details(batch: str):
 	elif is_student_enrolled:
 		batch_details.students = [frappe.session.user]
 
-	if batch_details.paid_batch and batch_details.start_date >= getdate():
+	if batch_details.paid_batch and batch_details.accept_enrollments:
+		class_dates = get_batch_class_dates(batch)
+		full_amount = batch_details.amount
+		batch_details.amount = get_prorated_batch_amount(
+			full_amount, batch_details.allow_late_joining_prorated_price, class_dates
+		)
+		# Scale amount_usd by the same ratio, so check_multicurrency's USD fallback below
+		# can't silently revert a prorated price back to the full USD amount.
+		if full_amount:
+			batch_details.amount_usd = flt(
+				batch_details.amount_usd * (batch_details.amount / full_amount), 2
+			)
 		batch_details.amount, batch_details.currency = check_multicurrency(
 			batch_details.amount, batch_details.currency, None, batch_details.amount_usd
 		)
 		batch_details.price = fmt_money(batch_details.amount, 0, batch_details.currency)
+		batch_details.approx_local = get_approx_local_price(
+			batch_details.amount, batch_details.currency
+		)
 
 	if batch_details.seat_count:
 		batch_details.seats_left = batch_details.seat_count - len(batch_students)
@@ -2403,6 +2533,7 @@ def get_batches(filters: dict = None, start: int = 0, order_by: str = "start_dat
 			"amount",
 			"amount_usd",
 			"currency",
+			"allow_late_joining_prorated_price",
 			"start_date",
 			"end_date",
 			"start_time",
@@ -2454,6 +2585,7 @@ def get_batch_type(filters: dict) -> str:
 
 
 def get_batch_card_details(batches: list) -> list:
+	class_dates_by_batch = get_batches_class_dates([b.name for b in batches])
 	for batch in batches:
 		batch.instructors = get_instructors("LMS Batch", batch.name)
 		students_count = frappe.db.count("LMS Batch Enrollment", {"batch": batch.name})
@@ -2461,11 +2593,21 @@ def get_batch_card_details(batches: list) -> list:
 		if batch.seat_count:
 			batch.seats_left = batch.seat_count - students_count
 
-		if batch.paid_batch and batch.start_date >= getdate():
+		# Mirrors accept_enrollments in get_batch_details: a batch that hasn't ended yet is
+		# still purchasable, so its price should still render on the catalog card.
+		if batch.paid_batch and batch.end_date >= getdate():
+			class_dates = class_dates_by_batch.get(batch.name, [])
+			full_amount = batch.amount
+			batch.amount = get_prorated_batch_amount(
+				full_amount, batch.allow_late_joining_prorated_price, class_dates
+			)
+			if full_amount:
+				batch.amount_usd = flt(batch.amount_usd * (batch.amount / full_amount), 2)
 			batch.amount, batch.currency = check_multicurrency(
 				batch.amount, batch.currency, None, batch.amount_usd
 			)
 			batch.price = fmt_money(batch.amount, 0, batch.currency)
+			batch.approx_local = get_approx_local_price(batch.amount, batch.currency)
 
 	return batches
 

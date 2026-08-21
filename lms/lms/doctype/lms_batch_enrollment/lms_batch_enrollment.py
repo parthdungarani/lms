@@ -110,6 +110,12 @@ def send_confirmation_email(doc: Document):
 	if isinstance(doc, str):
 		doc = frappe._dict(json.loads(doc))
 
+	# CELPIP paid-batch enrollments send their own unified confirmation-with-receipt email
+	# (celpipedu.notifications.emails.send_purchase_confirmation_email). The fulfilment worker
+	# sets this flag around on_payment_authorized so this native LMS mail doesn't duplicate it.
+	if frappe.flags.get("celpip_skip_batch_email"):
+		return
+
 	roles = frappe.get_roles()
 	is_admin = "Moderator" in roles or "Batch Evaluator" in roles
 	is_member = doc.member == frappe.session.user

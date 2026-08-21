@@ -65,6 +65,7 @@
   "amount",
   "currency",
   "amount_usd",
+  "allow_late_joining_prorated_price",
   "customisations_tab",
   "section_break_ubxi",
   "custom_component",
@@ -312,6 +313,14 @@
    "fieldname": "amount_usd",
    "fieldtype": "Currency",
    "label": "Amount (USD)"
+  },
+  {
+   "default": "0",
+   "depends_on": "paid_batch",
+   "description": "If someone joins after the batch's first scheduled class day, charge them only for the class days they'll actually get (based on the Timetable), instead of the full amount.",
+   "fieldname": "allow_late_joining_prorated_price",
+   "fieldtype": "Check",
+   "label": "Prorate Price For Late Joiners"
   },
   {
    "default": "0",
