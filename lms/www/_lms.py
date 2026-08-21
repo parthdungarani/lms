@@ -20,7 +20,7 @@ def get_context():
 	# directly rather than imported, to avoid an lms -> celpipedu dependency; delete this block
 	# when the mentor console lands and this frontend is retired.
 	if frappe.conf.get("celppro_new_app_enabled") and not (
-		{"System Manager", "Moderator"} & set(frappe.get_roles())
+		{"System Manager", "Moderator", "Batch Evaluator"} & set(frappe.get_roles())
 	):
 		frappe.local.flags.redirect_location = "/school"
 		raise frappe.Redirect
