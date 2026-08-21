@@ -191,6 +191,9 @@ const isAdmin = () => {
 }
 
 const canAccessClass = (cls) => {
+	// Moderators/evaluators can always see the join link (to share/verify it),
+	// not just on the day of the class.
+	if (isAdmin()) return true
 	if (cls.date < dayjs().format('YYYY-MM-DD')) return false
 	if (cls.date > dayjs().format('YYYY-MM-DD')) return false
 	if (hasClassEnded(cls)) return false

@@ -79,7 +79,7 @@
 									:class="
 										profile.data.open_to === 'Work'
 											? 'bg-surface-green-3'
-											: 'bg-purple-500'
+											: 'bg-surface-violet-3'
 									"
 								>
 									<span class="lucide-badge-check text-ink-base size-5" />

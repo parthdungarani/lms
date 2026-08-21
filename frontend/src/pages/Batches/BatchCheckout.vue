@@ -53,23 +53,13 @@
 								:endDate="summary.data.end_date"
 							/>
 						</div>
-						<div
+						<LocalizedClassTime
 							v-if="summary.data.start_time"
-							class="flex items-center gap-2.5 text-p-sm text-ink-gray-7"
-						>
-							<span class="lucide-clock size-4 text-ink-gray-5" />
-							<span dir="ltr">
-								{{ formatTime(summary.data.start_time) }} –
-								{{ formatTime(summary.data.end_time) }}
-							</span>
-						</div>
-						<div
-							v-if="summary.data.timezone"
-							class="flex items-center gap-2.5 text-p-sm text-ink-gray-7"
-						>
-							<span class="lucide-globe size-4 text-ink-gray-5" />
-							<span>{{ summary.data.timezone }}</span>
-						</div>
+							:startTime="summary.data.start_time"
+							:endTime="summary.data.end_time"
+							:timezone="summary.data.timezone"
+							:date="summary.data.start_date"
+						/>
 						<div
 							v-if="summary.data.seats_left !== null && summary.data.seats_left !== undefined"
 							class="flex items-center gap-2.5 text-p-sm text-ink-gray-7"
@@ -133,8 +123,9 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { call, createResource, toast, Button, Badge, Breadcrumbs } from 'frappe-ui'
-import { formatNumberIntoCurrency, formatTime } from '@/utils'
+import { formatCurrencyWithCode } from '@/utils/localize'
 import DateRange from '@/components/Common/DateRange.vue'
+import LocalizedClassTime from '@/components/Common/LocalizedClassTime.vue'
 
 const REFERENCE_DOCTYPE = 'LMS Batch'
 
@@ -161,7 +152,7 @@ const summary = createResource({
 
 const formattedAmount = computed(() => {
 	if (!summary.data) return ''
-	return formatNumberIntoCurrency(summary.data.amount, summary.data.currency)
+	return formatCurrencyWithCode(summary.data.amount, summary.data.currency)
 })
 
 const payLabel = computed(() => `${__('Pay')} ${formattedAmount.value} ${__('securely')}`)

@@ -176,6 +176,7 @@ import {
 import BooleanSwitch from '@/components/Controls/BooleanSwitch.vue'
 import { inject, reactive, watch, ref, computed } from 'vue'
 import { formatTime } from '@/utils'
+import { getLmsRoute } from '@/utils/basePath'
 import Link from '@/components/Controls/Link.vue'
 
 const show = defineModel()
@@ -372,9 +373,9 @@ const openCertificate = (certificate) => {
 const openLink = (type, name) => {
 	let url = ''
 	if (type === 'course') {
-		url = `/lms/courses/${name}`
+		url = getLmsRoute(`courses/${name}`)
 	} else if (type === 'batch') {
-		url = `/lms/batches/${name}#students`
+		url = getLmsRoute(`batches/${name}#students`)
 	}
 	window.open(url, '_blank')
 }

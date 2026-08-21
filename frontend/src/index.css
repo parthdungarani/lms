@@ -37,3 +37,62 @@ label.block:not([data-slot='label']) {
 .prose {
 	--tw-prose-bullets: var(--ink-gray-4);
 }
+
+/* CELPIP red brand accent -- Button.vue has no shared "primary" variable, each
+   theme+variant combo is a hardcoded literal class string, so unthemed (gray)
+   solid buttons are recolored by matching that exact class combination. Only
+   solid+gray is targeted: subtle/outline/ghost default buttons stay neutral
+   gray (secondary/tertiary weight), and buttons with an explicit theme
+   (green/orange/red destructive) carry different classes and are unaffected.
+   This also covers frappe-ui-internal usages (e.g. Dialog's default action
+   button) since it matches on rendered classes, not import path. */
+[class*='text-ink-base'][class*='bg-surface-gray-10'] {
+	background-color: var(--surface-red-7);
+}
+[class*='text-ink-base'][class*='bg-surface-gray-10']:hover {
+	background-color: var(--surface-red-8);
+}
+[class*='text-ink-base'][class*='bg-surface-gray-10']:active {
+	background-color: var(--surface-red-9);
+}
+
+/* Checkbox checked state -- native <input type="checkbox"> styled by
+   @tailwindcss/forms; checked fill follows CSS `color`. */
+input[type='checkbox']:checked {
+	color: var(--ink-red-4);
+}
+
+/* Switch "on" state -- reka-ui's SwitchRoot renders role="switch" with a
+   stable data-state attribute, so this survives frappe-ui class-string churn
+   better than the Button override above. */
+[role='switch'][data-state='checked'] {
+	background-color: var(--surface-red-6);
+}
+[role='switch'][data-state='checked']:hover {
+	background-color: var(--surface-red-7);
+}
+[role='switch'][data-state='checked']:active {
+	background-color: var(--surface-red-8);
+}
+
+/* Tabs underline-indicator -- the active-tab indicator div is always
+   bg-surface-gray-10; reka-ui positions it over the active tab, so scoping to
+   inside the tablist is enough to avoid touching unrelated gray-10 uses. */
+[role='tablist'] .bg-surface-gray-10 {
+	background-color: var(--surface-red-6);
+}
+
+/* TabButtons (segmented-pill) active state -- Pill.vue's underline variant
+   draws the indicator via an arbitrary-value ::after class; more fragile than
+   the rules above since it matches a literal arbitrary-value string, so
+   re-verify this one first after any frappe-ui version bump. */
+[data-slot='tab-button'][data-state='checked'] .after\:bg-\[var\(--ink-gray-8\)\]::after {
+	background-color: var(--surface-red-6);
+}
+
+/* Toast action-link text is the only other implicit "action color" (blue) in
+   frappe-ui outside of Button; route it to red too for consistency. */
+:root,
+[data-theme='dark'] {
+	--ink-blue-link: var(--ink-red-4);
+}

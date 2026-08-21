@@ -68,6 +68,7 @@ import { sessionStore } from '@/stores/session'
 import { call, Dropdown, toast } from 'frappe-ui'
 import { useRouter } from 'vue-router'
 import { convertToTitleCase } from '@/utils'
+import { getLmsBasePath } from '@/utils/basePath'
 import { applyTheme, toggleTheme, theme } from '@/utils/theme'
 import { usersStore } from '@/stores/user'
 import { useSettings } from '@/stores/settings'
@@ -254,7 +255,7 @@ const clearDemoDataConfirmation = () => {
 const clearDemoData = () => {
 	call('lms.lms.api.clear_demo_data')
 		.then(() => {
-			window.location.href = '/lms'
+			window.location.href = `/${getLmsBasePath()}`
 			toast.success(__('Demo data cleared successfully'))
 		})
 		.catch((error) => {

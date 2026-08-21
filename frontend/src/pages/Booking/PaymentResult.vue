@@ -52,7 +52,7 @@ const props = defineProps({
 const router = useRouter()
 
 const breadcrumbs = [
-	{ label: __('1:1 Sessions'), route: { name: 'SlotPicker' } },
+	{ label: __('Masterclass Sessions'), route: { name: 'SlotPicker' } },
 	{
 		label: __('Payment Result'),
 		route: { name: 'BookingPaymentResult', params: { name: props.name } },

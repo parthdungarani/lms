@@ -528,7 +528,7 @@ const getSidebarItems = (forMobile = false) => {
 					activeFor: ['Batches', 'BatchDetail', 'Batch', 'BatchForm'],
 				},
 				{
-					label: '1:1 Sessions',
+					label: 'Masterclass Sessions',
 					icon: 'CalendarClock',
 					to: 'SlotPicker',
 					activeFor: [
@@ -540,10 +540,49 @@ const getSidebarItems = (forMobile = false) => {
 					],
 				},
 				{
+					label: 'Manage Availability',
+					icon: 'CalendarRange',
+					to: 'MentorCalendar',
+					activeFor: ['MentorCalendar'],
+					condition: () => {
+						return (
+							userResource?.data?.is_moderator ||
+							userResource?.data?.is_evaluator
+						)
+					},
+				},
+				{
+					label: 'Material Hub',
+					icon: 'BookOpen',
+					to: 'MaterialHub',
+					activeFor: ['MaterialHub', 'MaterialDetail', 'MaterialCheckout'],
+				},
+				{
+					label: 'Manage Materials',
+					icon: 'FolderCog',
+					to: 'ManageMaterials',
+					activeFor: ['ManageMaterials'],
+					condition: () => {
+						return (
+							userResource?.data?.is_moderator ||
+							userResource?.data?.is_evaluator
+						)
+					},
+				},
+				{
 					label: 'My Bookings',
 					icon: 'CalendarCheck',
 					to: 'MyBookings',
 					activeFor: ['MyBookings', 'BookingJoin'],
+					condition: () => {
+						return userResource?.data
+					},
+				},
+				{
+					label: 'My Purchases',
+					icon: 'ShoppingBag',
+					to: 'MyMaterials',
+					activeFor: ['MyMaterials'],
 					condition: () => {
 						return userResource?.data
 					},

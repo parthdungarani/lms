@@ -253,6 +253,7 @@ const updateTabFilter = () => {
 	if (currentTab.value == 'enrolled' && is_student.value) {
 		filters.value['enrolled'] = 1
 		delete filters.value['start_date']
+		delete filters.value['end_date']
 		delete filters.value['published']
 		orderBy.value = 'start_date desc'
 	} else if (is_student.value) {
@@ -275,7 +276,11 @@ const updateTabFilter = () => {
 
 const updateStudentFilter = () => {
 	if (!user.data || (is_student.value && currentTab.value != 'enrolled')) {
-		filters.value['start_date'] = ['>=', dayjs().format('YYYY-MM-DD')]
+		// A batch stays visible for browsing/self-enrollment until it actually ENDS, not just
+		// until it starts -- otherwise a paid batch with allow_self_enrollment and open seats
+		// disappears from the catalog the day after it begins, even mid-run.
+		delete filters.value['start_date']
+		filters.value['end_date'] = ['>=', dayjs().format('YYYY-MM-DD')]
 		filters.value['published'] = 1
 	}
 }

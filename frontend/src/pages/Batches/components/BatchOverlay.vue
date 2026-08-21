@@ -29,11 +29,16 @@
 				class="float-end"
 				:label="__('Sold Out')"
 			/>
-			<div
-				v-if="batch.data.amount"
-				class="text-xl-semibold mb-5 text-ink-gray-9"
-			>
-				{{ formatNumberIntoCurrency(batch.data.amount, batch.data.currency) }}
+			<div v-if="batch.data.amount" class="mb-5">
+				<div class="text-xl-semibold text-ink-gray-9">
+					{{ formatCurrencyWithCode(batch.data.amount, batch.data.currency) }}
+				</div>
+				<div v-if="batch.data.approx_local" class="text-sm text-ink-gray-5">
+					{{ __('approx.') }} {{ batch.data.approx_local.formatted }}
+					<span class="text-ink-gray-4">
+						({{ __('charged in') }} {{ batch.data.currency }})
+					</span>
+				</div>
 			</div>
 			<div
 				v-if="batch.data.courses.length"
@@ -47,19 +52,13 @@
 				:endDate="batch.data.end_date"
 				class="mb-3"
 			/>
-			<div class="flex items-center mb-3 text-ink-gray-7">
-				<span class="lucide-clock h-4 w-4 me-2" />
-				<span dir="ltr">
-					{{ formatTime(batch.data.start_time) }} -
-					{{ formatTime(batch.data.end_time) }}
-				</span>
-			</div>
-			<div v-if="batch.data.timezone" class="flex items-center text-ink-gray-7">
-				<span class="lucide-globe h-4 w-4 me-2" />
-				<span>
-					{{ batch.data.timezone }}
-				</span>
-			</div>
+			<LocalizedClassTime
+				class="mb-3"
+				:startTime="batch.data.start_time"
+				:endTime="batch.data.end_time"
+				:timezone="batch.data.timezone"
+				:date="batch.data.start_date"
+			/>
 
 			<div v-if="!readOnlyMode && !canAccessBatch">
 				<router-link
@@ -106,8 +105,9 @@
 <script setup>
 import { inject, computed } from 'vue'
 import { Badge, Button, createResource, toast } from 'frappe-ui'
-import { formatNumberIntoCurrency, formatTime } from '@/utils'
+import { formatCurrencyWithCode } from '@/utils/localize'
 import DateRange from '@/components/Common/DateRange.vue'
+import LocalizedClassTime from '@/components/Common/LocalizedClassTime.vue'
 import VideoPreview from '@/components/VideoPreview.vue'
 import { useRouter } from 'vue-router'
 

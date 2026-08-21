@@ -1,5 +1,5 @@
 export function getLmsBasePath() {
-	return window.lms_path || 'lms'
+	return window.lms_path || 'school'
 }
 
 export function getLmsRoute(path = '') {

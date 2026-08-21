@@ -29,8 +29,13 @@
 		<div class="short-introduction text-sm text-ink-gray-7">
 			{{ batch.description }}
 		</div>
-		<div v-if="batch.amount" class="font-semibold text-ink-gray-9 mb-4">
-			{{ batch.price }}
+		<div v-if="batch.amount" class="mb-4">
+			<div class="font-semibold text-ink-gray-9">
+				{{ formatCurrencyWithCode(batch.amount, batch.currency) }}
+			</div>
+			<div v-if="batch.approx_local" class="text-xs text-ink-gray-5">
+				{{ __('approx.') }} {{ batch.approx_local.formatted }}
+			</div>
 		</div>
 		<div class="flex flex-col space-y-2 mt-auto">
 			<DateRange
@@ -38,21 +43,12 @@
 				:endDate="batch.end_date"
 				class="text-sm text-ink-gray-7"
 			/>
-			<div class="flex items-center text-sm text-ink-gray-7">
-				<span class="lucide-clock h-4 w-4 me-2 text-ink-gray-7" />
-				<span dir="ltr">
-					{{ formatTime(batch.start_time) }} - {{ formatTime(batch.end_time) }}
-				</span>
-			</div>
-			<div
-				v-if="batch.timezone"
-				class="flex items-center text-sm text-ink-gray-7"
-			>
-				<span class="lucide-globe h-4 w-4 me-2 text-ink-gray-5" />
-				<span>
-					{{ batch.timezone }}
-				</span>
-			</div>
+			<LocalizedClassTime
+				:startTime="batch.start_time"
+				:endTime="batch.end_time"
+				:timezone="batch.timezone"
+				:date="batch.start_date"
+			/>
 		</div>
 		<div
 			v-if="batch.instructors?.length"
@@ -73,8 +69,9 @@
 </template>
 <script setup>
 import { Badge } from 'frappe-ui'
-import { formatTime } from '@/utils'
+import { formatCurrencyWithCode } from '@/utils/localize'
 import DateRange from '@/components/Common/DateRange.vue'
+import LocalizedClassTime from '@/components/Common/LocalizedClassTime.vue'
 import CourseInstructors from '@/components/CourseInstructors.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 

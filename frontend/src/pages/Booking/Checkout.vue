@@ -4,37 +4,83 @@
 	>
 		<Breadcrumbs :items="breadcrumbs" />
 	</header>
-	<div class="mx-auto max-w-md px-5 pb-10 pt-8">
-		<div class="mb-5 text-xl-semibold text-ink-gray-9">
-			{{ __('Checkout') }}
+
+	<div class="mx-auto max-w-xl px-4 py-8 sm:py-10">
+		<h1 class="mb-1 text-xl-semibold text-ink-gray-9">
+			{{ __('Secure checkout') }}
+		</h1>
+		<p class="mb-6 text-p-sm text-ink-gray-6">
+			{{ __('Review your session and complete payment to confirm your booking.') }}
+		</p>
+
+		<div v-if="!summary.data" class="space-y-4">
+			<div class="h-36 animate-pulse rounded-xl bg-surface-gray-2" />
+			<div class="h-12 animate-pulse rounded-lg bg-surface-gray-2" />
 		</div>
 
-		<div v-if="summary.data" class="space-y-1 rounded-md bg-surface-gray-2 p-5">
-			<div class="text-xs uppercase text-ink-gray-5">
-				{{ summary.data.display_title }}
-			</div>
+		<template v-else>
 			<div
-				class="border-t border-outline-gray-3 pt-4 text-4xl-semibold text-ink-gray-9"
+				class="overflow-hidden rounded-xl border border-outline-gray-2 bg-surface-base shadow-sm"
 			>
-				{{ summary.data.currency }} {{ summary.data.amount }}
+				<div class="border-b border-outline-gray-2 p-5">
+					<div class="text-xs uppercase tracking-wide text-ink-gray-5">
+						{{ __('Masterclass Session') }}
+					</div>
+					<div class="mt-1 text-lg-semibold text-ink-gray-9">
+						{{ summary.data.display_title }}
+					</div>
+					<div
+						v-if="summary.data.timezone"
+						class="mt-1.5 flex items-center gap-1.5 text-p-sm text-ink-gray-5"
+					>
+						<span class="lucide-globe size-4" />
+						{{ summary.data.timezone }}
+					</div>
+				</div>
+				<div class="flex items-center justify-between bg-surface-gray-1 p-5">
+					<span class="text-p-base text-ink-gray-7">{{ __('Total payable') }}</span>
+					<span class="text-2xl-semibold text-ink-gray-9">{{ formattedAmount }}</span>
+				</div>
 			</div>
-		</div>
 
-		<Button
-			class="mt-6 w-full"
-			variant="solid"
-			size="lg"
-			:loading="payingNow"
-			@click="payNow"
-		>
-			{{ __('Pay Now') }}
-		</Button>
+			<Button
+				class="mt-5 w-full"
+				variant="solid"
+				size="lg"
+				:loading="payingNow"
+				@click="payNow"
+			>
+				<template #prefix>
+					<span class="lucide-lock size-4" />
+				</template>
+				{{ payLabel }}
+			</Button>
+
+			<div class="mt-5 space-y-2 text-center">
+				<div
+					class="flex items-center justify-center gap-2 text-p-sm text-ink-gray-6"
+				>
+					<span class="lucide-shield-check size-4 text-ink-green-600" />
+					{{ __('256-bit SSL secured · Payments processed by Razorpay') }}
+				</div>
+				<div class="text-xs text-ink-gray-5">
+					{{ __('Cards · UPI · Net Banking · Wallets accepted') }}
+				</div>
+				<div
+					class="flex items-center justify-center gap-2 text-xs text-ink-gray-5"
+				>
+					<span class="lucide-badge-check size-3.5" />
+					{{ __('Your meeting link is created instantly after payment') }}
+				</div>
+			</div>
+		</template>
 	</div>
 </template>
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { call, createResource, toast, Button, Breadcrumbs } from 'frappe-ui'
+import { formatNumberIntoCurrency } from '@/utils'
 
 const REFERENCE_DOCTYPE = 'CELPIP Slot Booking'
 
@@ -46,7 +92,7 @@ const router = useRouter()
 const payingNow = ref(false)
 
 const breadcrumbs = [
-	{ label: __('1:1 Sessions'), route: { name: 'SlotPicker' } },
+	{ label: __('Masterclass Sessions'), route: { name: 'SlotPicker' } },
 	{
 		label: __('Checkout'),
 		route: { name: 'BookingCheckout', params: { name: props.name } },
@@ -58,6 +104,23 @@ const summary = createResource({
 	params: { reference_doctype: REFERENCE_DOCTYPE, reference_name: props.name },
 	auto: true,
 })
+
+// Leaving checkout for anywhere other than the payment-processing screen means the user
+// didn't complete payment (e.g. they hit back) -- release the held slot immediately so it
+// doesn't stay blocked for the hold window. No-op server-side once the booking is paid.
+onBeforeRouteLeave((to) => {
+	if (to.name !== 'BookingPaymentProcessing') {
+		call('celpipedu.api.booking.release_slot_hold', { booking_name: props.name })
+	}
+	return true
+})
+
+const formattedAmount = computed(() => {
+	if (!summary.data) return ''
+	return formatNumberIntoCurrency(summary.data.amount, summary.data.currency)
+})
+
+const payLabel = computed(() => `${__('Pay')} ${formattedAmount.value} ${__('securely')}`)
 
 function loadRazorpayScript() {
 	if (window.Razorpay) return Promise.resolve()
@@ -98,18 +161,28 @@ async function payNow() {
 			modal: {
 				ondismiss() {
 					payingNow.value = false
+					// Free the slot at once when the payment window is closed without paying,
+					// instead of holding it until the backstop hold window lapses.
+					call('celpipedu.api.booking.release_slot_hold', {
+						booking_name: props.name,
+					})
 				},
 			},
 		})
 		razorpay.open()
 	} catch (error) {
+		const message = error.messages?.[0] || error.message || ''
 		toast({
 			title: __('Could not start checkout'),
-			text: error.messages?.[0] || error.message,
+			text: message,
 			icon: 'x',
 			iconClasses: 'text-red-500',
 		})
 		payingNow.value = false
+		// If the slot was taken while they were on this page, send them back to re-pick.
+		if (REFERENCE_DOCTYPE === 'CELPIP Slot Booking' && /slot|booked|available/i.test(message)) {
+			router.push({ name: 'SlotPicker' })
+		}
 	}
 }
 </script>

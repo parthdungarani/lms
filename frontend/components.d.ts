@@ -93,6 +93,7 @@ declare module 'vue' {
     LiveClassAttendance: typeof import('./src/components/Modals/LiveClassAttendance.vue')['default']
     LiveClassModal: typeof import('./src/components/Modals/LiveClassModal.vue')['default']
     LMSLogo: typeof import('./src/components/Icons/LMSLogo.vue')['default']
+    LocalizedClassTime: typeof import('./src/components/Common/LocalizedClassTime.vue')['default']
     LucideChevronLeft: typeof import('~icons/lucide/chevron-left')['default']
     LucideChevronRight: typeof import('~icons/lucide/chevron-right')['default']
     LucidePlus: typeof import('~icons/lucide/plus')['default']

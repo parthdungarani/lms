@@ -47,7 +47,7 @@ const socket = inject('$socket')
 const slow = ref(false)
 
 const breadcrumbs = [
-	{ label: __('1:1 Sessions'), route: { name: 'SlotPicker' } },
+	{ label: __('Masterclass Sessions'), route: { name: 'SlotPicker' } },
 	{
 		label: __('Confirming Payment'),
 		route: { name: 'BookingPaymentProcessing', params: { name: props.name } },

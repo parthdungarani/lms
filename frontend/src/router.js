@@ -106,6 +106,12 @@ const routes = [
 		component: () => import('@/pages/Booking/SlotPicker.vue'),
 	},
 	{
+		path: '/schedule/manage',
+		name: 'MentorCalendar',
+		component: () => import('@/pages/Booking/MentorCalendar.vue'),
+		meta: { requiresAuth: true },
+	},
+	{
 		path: '/schedule/confirm',
 		name: 'BookingDetailsForm',
 		component: () => import('@/pages/Booking/BookingDetailsForm.vue'),
@@ -144,6 +150,36 @@ const routes = [
 		component: () => import('@/pages/Booking/BookingJoin.vue'),
 		props: true,
 		meta: { requiresAuth: true },
+	},
+	{
+		path: '/materials',
+		name: 'MaterialHub',
+		component: () => import('@/pages/Materials/MaterialHub.vue'),
+	},
+	{
+		path: '/materials/checkout/:name',
+		name: 'MaterialCheckout',
+		component: () => import('@/pages/Materials/MaterialCheckout.vue'),
+		props: true,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/my-materials',
+		name: 'MyMaterials',
+		component: () => import('@/pages/Materials/MyMaterials.vue'),
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/materials/manage',
+		name: 'ManageMaterials',
+		component: () => import('@/pages/Materials/ManageMaterials.vue'),
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/materials/:name',
+		name: 'MaterialDetail',
+		component: () => import('@/pages/Materials/MaterialDetail.vue'),
+		props: true,
 	},
 	{
 		path: '/statistics',
