@@ -102,7 +102,7 @@ class LMSBatchEnrollment(Document):
 						"parenttype": "Event",
 						"parentfield": "event_participants",
 					}
-				).save()
+				).save(ignore_permissions=True)  # the enrolling student can't create Event Participants
 
 
 @frappe.whitelist()
