@@ -22,7 +22,9 @@ def get_context():
 	if frappe.conf.get("celppro_new_app_enabled") and not (
 		{"System Manager", "Moderator", "Batch Evaluator"} & set(frappe.get_roles())
 	):
-		frappe.local.flags.redirect_location = "/school"
+		# Batch emails link to /lms/batches/<name>; land on that batch's Celppro page.
+		batch = re.match(r"batches/([^/?#]+)", frappe.form_dict.get("app_path") or "")
+		frappe.local.flags.redirect_location = f"/school/batches/{batch.group(1)}" if batch else "/school"
 		raise frappe.Redirect
 
 	context = frappe._dict()
